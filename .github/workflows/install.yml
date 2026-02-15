@@ -84,7 +84,7 @@ jobs:
       
       - name: Run markdown linting
         run: |
-          markdownlint '*.md' --ignore node_modules || true
+          markdownlint '**/*.md' --ignore node_modules || true
         continue-on-error: true
       
       - name: Summary

@@ -1,0 +1,60 @@
+# Security Scanning Configuration
+
+# Common secret patterns to detect in code and documentation
+secret_patterns:
+  - pattern: "(api[_-]?key|apikey)\\s*[=:]\\s*['\"][a-zA-Z0-9_-]{20,}['\"]"
+    description: "API keys"
+    severity: "high"
+  
+  - pattern: "(access[_-]?token|accesstoken)\\s*[=:]\\s*['\"][a-zA-Z0-9_-]{20,}['\"]"
+    description: "Access tokens"
+    severity: "high"
+  
+  - pattern: "(secret[_-]?key|secretkey)\\s*[=:]\\s*['\"][a-zA-Z0-9_-]{20,}['\"]"
+    description: "Secret keys"
+    severity: "high"
+  
+  - pattern: "password\\s*[=:]\\s*['\"][^'\"]{8,}['\"]"
+    description: "Hardcoded passwords"
+    severity: "high"
+  
+  - pattern: "github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}"
+    description: "GitHub Personal Access Token"
+    severity: "critical"
+  
+  - pattern: "ghp_[a-zA-Z0-9]{36}"
+    description: "GitHub OAuth Token"
+    severity: "critical"
+  
+  - pattern: "ghs_[a-zA-Z0-9]{36}"
+    description: "GitHub App Token"
+    severity: "critical"
+
+# Email patterns to allow (these won't trigger warnings)
+allowed_email_patterns:
+  - "example.com"
+  - "example.org"
+  - "example.net"
+  - "github.com"
+  - "bitcoinunlimited.info"
+  - "bitcoinunlimited.net"
+  - "bitcoinunlimited.org"
+  - "bitco.in"
+  - "noreply.github.com"
+
+# File extensions to scan for secrets
+scan_extensions:
+  - ".md"
+  - ".txt"
+  - ".yml"
+  - ".yaml"
+  - ".json"
+  - ".sh"
+
+# Private key patterns (these should fail the build)
+critical_patterns:
+  - "-----BEGIN.*PRIVATE KEY-----"
+  - "-----BEGIN RSA PRIVATE KEY-----"
+  - "-----BEGIN EC PRIVATE KEY-----"
+  - "-----BEGIN OPENSSH PRIVATE KEY-----"
+  - "-----BEGIN PGP PRIVATE KEY BLOCK-----"
