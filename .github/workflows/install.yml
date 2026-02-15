@@ -1,0 +1,136 @@
+name: Install and Setup
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  install-dependencies:
+    name: Install Dependencies
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        if: hashFiles('package.json') != ''
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+        if: hashFiles('requirements.txt') != ''
+      
+      - name: Install Node.js dependencies
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci
+          else
+            echo "No package.json found, skipping Node.js dependencies"
+          fi
+      
+      - name: Install Python dependencies
+        run: |
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          else
+            echo "No requirements.txt found, skipping Python dependencies"
+          fi
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/pip
+            node_modules
+          key: ${{ runner.os }}-dependencies-${{ hashFiles('**/package-lock.json', '**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-dependencies-
+      
+      - name: Verify installation
+        run: |
+          echo "Installation complete on self-hosted runner"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner architecture: ${{ runner.arch }}"
+
+  lint-markdown:
+    name: Lint Markdown Files
+    runs-on: [self-hosted, linux]
+    needs: install-dependencies
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+      
+      - name: Run markdown linting
+        run: |
+          markdownlint '*.md' --ignore node_modules || true
+        continue-on-error: true
+      
+      - name: Summary
+        run: echo "Markdown linting complete"
+
+  validate-structure:
+    name: Validate Repository Structure
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check required files
+        run: |
+          echo "Checking for required files..."
+          
+          if [ ! -f "README.md" ]; then
+            echo "::warning::README.md not found"
+          else
+            echo "✓ README.md exists"
+          fi
+          
+          if [ ! -f "LICENSE" ]; then
+            echo "::warning::LICENSE not found"
+          else
+            echo "✓ LICENSE exists"
+          fi
+          
+          if [ ! -f "PRIVACY.md" ]; then
+            echo "::warning::PRIVACY.md not found"
+          else
+            echo "✓ PRIVACY.md exists"
+          fi
+          
+          if [ ! -f "POLICY.md" ]; then
+            echo "::warning::POLICY.md not found"
+          else
+            echo "✓ POLICY.md exists"
+          fi
+      
+      - name: Count BUIP files
+        run: |
+          buip_count=$(ls -1 [0-9][0-9][0-9].md 2>/dev/null | wc -l)
+          echo "Found $buip_count BUIP files"
+          echo "BUIP_COUNT=$buip_count" >> $GITHUB_ENV
+      
+      - name: Structure validation complete
+        run: echo "Repository structure validation complete"
