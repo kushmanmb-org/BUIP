@@ -7,10 +7,15 @@ on:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   install-dependencies:
     name: Install Dependencies
     runs-on: [self-hosted, linux]
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -69,6 +74,8 @@ jobs:
     name: Lint Markdown Files
     runs-on: [self-hosted, linux]
     needs: install-dependencies
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -93,6 +100,8 @@ jobs:
   validate-structure:
     name: Validate Repository Structure
     runs-on: [self-hosted, linux]
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository
