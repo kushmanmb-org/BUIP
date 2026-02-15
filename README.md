@@ -1,6 +1,15 @@
 Bitcoin Unlimited Improvement Proposal Archive and related
 documentation.
 
+## Repository Policies
+
+- 📋 [Contribution Policy](POLICY.md) - Guidelines, code of conduct, and submission process
+- 🔒 [Privacy Policy](PRIVACY.md) - How we handle data and protect your privacy
+- 🔧 [Workflows](.github/workflows/README.md) - Automated CI/CD with self-hosted runners
+- 🛡️ [Security](.github/IMPLEMENTATION_GUIDE.md) - Repository protection and rulesets
+
+## Submitting a BUIP
+
 To submit a BUIP please post your proposal at
 <https://bitco.in/forum/forums/bitcoin-unlimited.15/>
 
