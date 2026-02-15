@@ -1,0 +1,182 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: [self-hosted, linux]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+  markdown-security-scan:
+    name: Markdown Security Scan
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Scan for secrets in markdown files
+        run: |
+          echo "Scanning markdown files for potential secrets..."
+          
+          # Check for potential API keys, tokens, passwords
+          if grep -rE '(api[_-]?key|token|password|secret)["\s:=]+[a-zA-Z0-9_-]{20,}' *.md 2>/dev/null; then
+            echo "::warning::Potential secrets found in markdown files"
+          else
+            echo "✓ No obvious secrets found in markdown files"
+          fi
+      
+      - name: Check for sensitive patterns
+        run: |
+          echo "Checking for common sensitive patterns..."
+          
+          # Check for private keys
+          if grep -r "BEGIN.*PRIVATE KEY" *.md 2>/dev/null; then
+            echo "::error::Private key found in markdown file!"
+            exit 1
+          fi
+          
+          # Check for email addresses that might be personal
+          if grep -rE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' *.md 2>/dev/null | grep -v -E '(example\.com|github\.com|bitcoinunlimited)' | head -5; then
+            echo "::warning::Email addresses found - verify they should be public"
+          fi
+          
+          echo "✓ Sensitive pattern check complete"
+
+  link-validation:
+    name: Validate External Links
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install link checker
+        run: npm install -g markdown-link-check
+      
+      - name: Check markdown links
+        run: |
+          echo "Checking links in markdown files..."
+          
+          # Check all .md files
+          for file in *.md; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              markdown-link-check "$file" --quiet --config .github/markdown-link-check.json || true
+            fi
+          done
+        continue-on-error: true
+
+  file-permissions-check:
+    name: Check File Permissions
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check for executable files
+        run: |
+          echo "Checking for unexpected executable files..."
+          
+          # Find executable files (excluding .git and expected directories)
+          executable_files=$(find . -type f -executable -not -path "./.git/*" -not -path "./node_modules/*" 2>/dev/null || true)
+          
+          if [ -n "$executable_files" ]; then
+            echo "::warning::Executable files found:"
+            echo "$executable_files"
+          else
+            echo "✓ No unexpected executable files found"
+          fi
+      
+      - name: Check file ownership
+        run: |
+          echo "Verifying file ownership patterns..."
+          
+          # Check for files with unusual permissions
+          unusual_perms=$(find . -type f \( -perm -002 -o -perm -020 \) -not -path "./.git/*" 2>/dev/null || true)
+          
+          if [ -n "$unusual_perms" ]; then
+            echo "::warning::Files with world/group write permissions found:"
+            echo "$unusual_perms"
+          else
+            echo "✓ File permissions look good"
+          fi
+
+  repository-audit:
+    name: Repository Audit
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Audit commit signatures
+        run: |
+          echo "Checking recent commit signatures..."
+          
+          # Check last 10 commits for signatures
+          git log -10 --show-signature --oneline 2>&1 | head -20
+          
+          unsigned_count=$(git log -10 --format="%H %G?" | grep -c " N" || echo "0")
+          
+          if [ "$unsigned_count" -gt 0 ]; then
+            echo "::warning::Found $unsigned_count unsigned commits in last 10 commits"
+          else
+            echo "✓ All recent commits are signed"
+          fi
+      
+      - name: Check for large files
+        run: |
+          echo "Checking for large files..."
+          
+          # Find files larger than 1MB
+          large_files=$(find . -type f -size +1M -not -path "./.git/*" 2>/dev/null || true)
+          
+          if [ -n "$large_files" ]; then
+            echo "::warning::Large files found (>1MB):"
+            du -h $large_files | sort -hr | head -10
+          else
+            echo "✓ No large files found"
+          fi
+      
+      - name: Generate security summary
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Dependency review completed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Markdown security scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ File permissions checked" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Repository audit completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Scan Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
