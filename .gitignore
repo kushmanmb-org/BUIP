@@ -129,8 +129,10 @@ auth.yaml
 *local*.sqlite
 *local*.sqlite3
 *test*.db
-*.dump
-*.backup
+*.sql.dump
+*.db.dump
+*.sql.backup
+*.db.backup
 backup/
 backups/
 
@@ -146,7 +148,9 @@ config.production.*
 .aws/
 .azure/
 .gcloud/
-*gcp*.json
+gcp-credentials*.json
+*-gcp-key.json
+*service-account*.json
 
 # IDE and Editor files with sensitive info
 .idea/workspace.xml
