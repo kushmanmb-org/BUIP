@@ -8,6 +8,41 @@ documentation.
 - 🔧 [Workflows](.github/workflows/README.md) - Automated CI/CD with self-hosted runners
 - 🛡️ [Security](.github/IMPLEMENTATION_GUIDE.md) - Repository protection and rulesets
 
+## Development Tools
+
+This repository includes a `Makefile` for common development tasks and security checks:
+
+```bash
+# Show all available commands
+make help
+
+# Validate repository structure
+make validate
+
+# Run markdown linting
+make lint
+
+# Check for accidentally committed secrets and sensitive data
+make check-secrets
+
+# Run all security checks
+make security
+
+# Run all tests (lint, validate, security)
+make test
+
+# Run everything (install dependencies, lint, validate, security)
+make all
+```
+
+**Key Security Features:**
+- 🔍 Automated scanning for private keys, API tokens, and secrets
+- 🛡️ File permission checks
+- ✅ .gitignore validation for sensitive file patterns
+- 📧 Email address detection and review
+
+For more details, run `make help` or see the [Security Policy](POLICY.md#security-policy).
+
 ## Submitting a BUIP
 
 To submit a BUIP please post your proposal at
