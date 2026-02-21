@@ -142,6 +142,175 @@ Security updates apply to:
 - Referenced implementations
 - Repository infrastructure
 
+### Key Management and Sensitive Data Protection
+
+**CRITICAL: Never commit sensitive data to the repository**
+
+#### Protected Information Types
+
+The following types of information must **NEVER** be committed to the repository:
+
+1. **Private Keys and Credentials**
+   - Private cryptographic keys (RSA, ECDSA, Ed25519, etc.)
+   - SSH private keys
+   - Bitcoin or cryptocurrency wallet private keys
+   - PGP/GPG private keys
+   - SSL/TLS private certificates
+
+2. **API Keys and Tokens**
+   - GitHub personal access tokens
+   - API keys for any service
+   - OAuth tokens
+   - Access tokens
+   - Secret keys
+
+3. **Passwords and Authentication**
+   - Hardcoded passwords
+   - Database credentials
+   - Service account credentials
+   - Authentication tokens
+
+4. **Configuration Files with Secrets**
+   - `.env` files with real credentials
+   - `config` files with production secrets
+   - Cloud provider credential files
+   - Service account JSON files
+
+#### Safe Practices for Sensitive Data
+
+1. **Use Environment Variables**
+   ```bash
+   # Good: Use environment variables
+   export API_KEY="your-secret-key"
+   
+   # Bad: Hardcode in files
+   API_KEY="your-secret-key"  # NEVER DO THIS
+   ```
+
+2. **Use .gitignore Properly**
+   - The repository includes a comprehensive `.gitignore` file
+   - Review it regularly to ensure all sensitive patterns are covered
+   - Test with `git status` before committing
+
+3. **Use Example/Template Files**
+   ```bash
+   # Commit templates, not actual secrets
+   .env.example     # ✓ Commit this
+   .env             # ✗ Never commit this
+   config.sample    # ✓ Commit this
+   config.local     # ✗ Never commit this
+   ```
+
+4. **Automated Security Scanning**
+   
+   Use the provided Makefile for security checks:
+   
+   ```bash
+   # Check for accidentally committed secrets before pushing
+   make check-secrets
+   
+   # Check for private keys (will fail if found)
+   make check-keys
+   
+   # Check for API tokens
+   make check-tokens
+   
+   # Run all security checks
+   make security
+   ```
+
+5. **GitHub Secret Scanning**
+   - Enable GitHub's secret scanning in repository settings
+   - Enable push protection to prevent accidental commits
+   - Review and remediate any detected secrets immediately
+
+6. **If You Accidentally Commit a Secret**
+   
+   **IMMEDIATE ACTIONS REQUIRED:**
+   
+   a. **Rotate the Secret Immediately**
+      - Revoke the exposed key/token/password
+      - Generate a new one
+      - Update all systems using the old secret
+   
+   b. **Remove from Git History**
+      ```bash
+      # Use git-filter-repo (recommended) or BFG Repo-Cleaner
+      # DO NOT use git filter-branch (deprecated)
+      
+      # Example with git-filter-repo:
+      git filter-repo --path-glob '*secret*' --invert-paths
+      ```
+   
+   c. **Force Push** (coordinate with team first)
+      ```bash
+      git push --force-with-lease
+      ```
+   
+   d. **Notify Security Team**
+      - Contact maintainers immediately
+      - Document the incident
+      - Review access logs if applicable
+
+#### Pre-commit Security Checks
+
+Before committing any code, run:
+
+```bash
+# Quick security check
+make check-secrets
+
+# Full validation
+make test
+```
+
+Consider setting up a git pre-commit hook:
+
+```bash
+# Create .git/hooks/pre-commit
+#!/bin/bash
+make check-secrets || exit 1
+```
+
+#### Repository Rulesets for Security
+
+The repository includes GitHub rulesets that enforce security best practices:
+
+1. **Main Branch Protection** (`.github/rulesets/main-branch-protection.json`)
+   - Requires pull request reviews
+   - Requires all status checks (including security scans) to pass
+   - Prevents force pushes
+   - Requires signed commits (recommended)
+
+2. **Tag Protection** (`.github/rulesets/tag-protection.json`)
+   - Protects version tags from unauthorized changes
+   - Prevents tag deletion
+
+To apply these rulesets, see:
+- `.github/rulesets/README.md` for detailed instructions
+- `.github/IMPLEMENTATION_GUIDE.md` for step-by-step setup
+- Or run: `make apply-rulesets` for quick instructions
+
+#### Security Scanning in CI/CD
+
+The repository's GitHub Actions workflows automatically:
+- Scan for secrets in markdown and documentation files
+- Check for private keys
+- Validate file permissions
+- Review dependencies for vulnerabilities
+- Check for large or unusual files
+
+See `.github/workflows/security.yml` for details.
+
+#### Training and Awareness
+
+All contributors should:
+- Understand what constitutes sensitive data
+- Know how to use environment variables and secret management
+- Use the security tools provided (Makefile, workflows)
+- Report security concerns immediately
+- Never share credentials via chat, email, or comments
+
 ## Branch Protection
 
 ### Main Branch Protection
