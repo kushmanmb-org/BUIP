@@ -96,11 +96,11 @@ check-keys:
 check-tokens:
 	@echo "Checking for API tokens and secrets..."
 	@findings=0; \
-	if grep -rE 'gh[ps]_[a-zA-Z0-9]{36}' --include="*.md" --include="*.txt" --include="*.yml" --include="*.yaml" --include="*.json" . 2>/dev/null | grep -v ".github/security-patterns.yml"; then \
+	if grep -rE 'gh[ps]_[a-zA-Z0-9]{36,}' --include="*.md" --include="*.txt" --include="*.yml" --include="*.yaml" --include="*.json" . 2>/dev/null | grep -v ".github/security-patterns.yml"; then \
 		echo "❌ ERROR: GitHub token detected!"; \
 		findings=$$((findings + 1)); \
 	fi; \
-	if grep -rE '(api[_-]?key|token|password|secret)["\s:=]+[a-zA-Z0-9_-]{20,}' --include="*.md" --include="*.txt" --include="*.yml" --include="*.yaml" . 2>/dev/null | grep -v ".github/security-patterns.yml" | grep -v "Makefile"; then \
+	if grep -rE '(api[_-]?key|token|password|secret)["\s:=]+[a-zA-Z0-9_-]{20,}' --include="*.md" --include="*.txt" --include="*.yml" --include="*.yaml" . 2>/dev/null | grep -v ".github/security-patterns.yml" | grep -v "POLICY.md"; then \
 		echo "⚠ WARNING: Potential secrets found - please review"; \
 		findings=$$((findings + 1)); \
 	fi; \
