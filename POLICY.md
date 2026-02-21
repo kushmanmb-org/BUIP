@@ -180,11 +180,13 @@ The following types of information must **NEVER** be committed to the repository
 
 1. **Use Environment Variables**
    ```bash
-   # Good: Use environment variables
-   export API_KEY="your-secret-key"
+   # Good: Load from a secure source
+   export API_KEY=$(cat ~/.secrets/api_key)
+   # Or use a secure environment manager
+   source ~/.env.secure
    
    # Bad: Hardcode in files
-   API_KEY="your-secret-key"  # NEVER DO THIS
+   API_KEY="sk-1234567890abcdef"  # NEVER DO THIS
    ```
 
 2. **Use .gitignore Properly**
